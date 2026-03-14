@@ -1,0 +1,20 @@
+{
+  "n_observations": 1107,
+  "female_count": 354,
+  "male_count": 753,
+  "female_mean_starting_salary": 3600.322901,
+  "female_median_starting_salary": 3502.5,
+  "male_mean_starting_salary": 4015.545388,
+  "male_median_starting_salary": 3719.0,
+  "raw_starting_salary_gap": 415.222487,
+  "intercept": 7.725473,
+  "male_coefficient": -0.0339,
+  "male_p_value": 0.173922,
+  "field_other_coefficient": 0.139546,
+  "field_prof_coefficient": 0.24066,
+  "deg_phd_coefficient": 0.150263,
+  "deg_prof_coefficient": 0.138292,
+  "experience_coefficient": 0.03023,
+  "r_squared": 0.252499,
+  "adj_r_squared": 0.248422
+}

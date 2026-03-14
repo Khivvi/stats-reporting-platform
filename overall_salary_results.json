@@ -1,0 +1,20 @@
+{
+  "n_observations": 19788,
+  "female_mean_salary": 4185.462274,
+  "female_median_salary": 3996.0,
+  "male_mean_salary": 4854.544617,
+  "male_median_salary": 4505.0,
+  "raw_salary_gap": 669.082342,
+  "salary_gap_ci_lower": 611.607529,
+  "salary_gap_ci_upper": 726.557155,
+  "welch_ttest_p_value": 1.1166417565188782e-111,
+  "intercept": 7.968828,
+  "male_coefficient": -0.024281,
+  "male_p_value": 5.8709158e-05,
+  "assoc_rank_coefficient": 0.026687,
+  "full_rank_coefficient": 0.257113,
+  "experience_coefficient": 0.018235,
+  "admin_coefficient": 0.157181,
+  "r_squared": 0.385683,
+  "adj_r_squared": 0.385528
+}

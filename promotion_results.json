@@ -1,0 +1,16 @@
+{
+  "n_observations": 984,
+  "female_count": 238,
+  "male_count": 746,
+  "female_promotion_rate": 42.016807,
+  "male_promotion_rate": 59.919571,
+  "female_mean_max_tenure": 10.205882,
+  "male_mean_max_tenure": 10.682306,
+  "intercept": 0.34299,
+  "male_coefficient": 0.780403,
+  "male_p_value": 0.0,
+  "max_tenure_coefficient": -0.066495,
+  "max_tenure_p_value": 0.0,
+  "male_odds_ratio": 2.182352,
+  "pseudo_r_squared": 0.047384
+}

@@ -1,0 +1,14 @@
+{
+  "n_observations": 19792,
+  "n_faculty": 1597,
+  "mean_tenure": 11.360146,
+  "mean_experience": 15.325586,
+  "female_mean_salary": 4185.462274,
+  "female_median_salary": 3996.0,
+  "male_mean_salary": 4854.544617,
+  "male_median_salary": 4505.0,
+  "female_mean_tenure": 8.1243,
+  "male_mean_tenure": 12.160847,
+  "female_mean_experience": 11.931737,
+  "male_mean_experience": 16.165385
+}

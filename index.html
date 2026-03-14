@@ -1,0 +1,1256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gender Wage Inequality in University Faculty Salaries</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-soft: #121933;
+      --card: rgba(255,255,255,0.06);
+      --text: #eef2ff;
+      --muted: #b9c1e0;
+      --accent: #79a6ff;
+      --accent-2: #6ee7d8;
+      --border: rgba(255,255,255,0.12);
+      --shadow: 0 18px 45px rgba(0,0,0,0.35);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(121,166,255,0.18), transparent 28%),
+        radial-gradient(circle at 80% 15%, rgba(110,231,216,0.16), transparent 24%),
+        linear-gradient(180deg, #0b1020 0%, #0a0f1c 100%);
+      min-height: 100vh;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .container {
+      width: min(1200px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(14px);
+      background: rgba(11,16,32,0.68);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .nav-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 0;
+    }
+
+    .brand {
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      font-size: 1rem;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .hero {
+      padding: 64px 0 34px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.25fr 0.95fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .hero-card,
+    .panel,
+    .metric-card,
+    .info-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card { padding: 32px; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(121,166,255,0.16);
+      color: #dbe7ff;
+      font-size: 0.84rem;
+      border: 1px solid rgba(121,166,255,0.22);
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.7;
+      margin: 0 0 20px;
+    }
+
+    .authors {
+      font-size: 0.95rem;
+      color: #d8def5;
+      margin-bottom: 26px;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      font-weight: 700;
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn.primary {
+      background: linear-gradient(135deg, rgba(121,166,255,0.95), rgba(110,231,216,0.9));
+      color: #0c1020;
+      border-color: transparent;
+    }
+
+    .hero-side {
+      display: grid;
+      gap: 16px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .metric-card { padding: 18px; }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .metric-sub {
+      margin-top: 8px;
+      color: #dce3ff;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .section {
+      padding: 28px 0;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .section-header h2 {
+      margin: 0;
+      font-size: clamp(1.5rem, 3vw, 2.3rem);
+      letter-spacing: -0.03em;
+    }
+
+    .section-header p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 820px;
+      line-height: 1.65;
+    }
+
+    .cards-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .cards-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .info-card { padding: 20px; }
+
+    .info-card h3 {
+      margin: 0 0 10px;
+      font-size: 1.08rem;
+    }
+
+    .info-card p, .info-card li {
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 0.98rem;
+    }
+
+    .panel {
+      padding: 18px;
+      overflow: hidden;
+    }
+
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .panel-title h3 {
+      margin: 0;
+      font-size: 1.06rem;
+    }
+
+    .plot {
+      width: 100%;
+      height: 420px;
+    }
+
+    .plot.small { height: 360px; }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      min-width: 180px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px 14px;
+      outline: none;
+    }
+
+    .tab-bar {
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      padding: 6px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .tab-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: rgba(121,166,255,0.18);
+      color: var(--text);
+    }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .result-banner {
+      margin-top: 14px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      background: rgba(121,166,255,0.12);
+      border: 1px solid rgba(121,166,255,0.22);
+      color: #dce6ff;
+      line-height: 1.7;
+    }
+
+    .badge {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+    }
+
+    .callout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .callout {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .callout p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.94rem;
+    }
+
+    .footer {
+      padding: 40px 0 60px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .error {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(255,142,142,0.12);
+      border: 1px solid rgba(255,142,142,0.22);
+      color: #ffd0d0;
+      display: none;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid, .cards-3, .cards-2, .metric-grid, .callout-grid {
+        grid-template-columns: 1fr;
+      }
+      .plot, .plot.small { height: 360px; }
+      .nav-inner, .section-header { align-items: start; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="container nav-inner">
+      <div class="brand">Faculty Salary Inequality Project</div>
+      <div class="nav-links">
+        <a href="#overview">Overview</a>
+        <a href="#data-explorer">Data Explorer</a>
+        <a href="#findings">Findings</a>
+        <a href="#method">Method</a>
+        <a href="#limitations">Limitations</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container hero-grid">
+      <div class="hero-card">
+        <div class="eyebrow">Longitudinal Salary Evidence · 1976–1995</div>
+        <h1>Gender Wage Inequality in University Faculty Salaries</h1>
+        <div class="authors">Ishani Bhat, Daniel Yan, Meg Kaki, Wonjoon Hwang, Raunak Khinvasara, Avanthikaa Srinivasan</div>
+        <p>
+          This interactive website translates your project into a research story: a large raw salary gap appears in the data,
+          but the strongest evidence points toward <strong>structural inequality in promotion and rank attainment</strong>
+          rather than clear evidence of systematic adjusted starting-salary discrimination.
+        </p>
+        <div class="cta-row">
+          <a class="btn primary" href="#findings">Explore Key Findings</a>
+          <a class="btn" href="#data-explorer">Open Data Explorer</a>
+        </div>
+      </div>
+
+      <div class="hero-side">
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="metric-label">Faculty-Year Observations</div>
+            <div class="metric-value" id="obsValue">—</div>
+            <div class="metric-sub">Annual salary records used in the longitudinal panel.</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Unique Faculty</div>
+            <div class="metric-value" id="facultyValue">—</div>
+            <div class="metric-sub">Faculty members followed over time.</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Raw Monthly Gap</div>
+            <div class="metric-value" id="rawGapValue">—</div>
+            <div class="metric-sub">Average male salary minus female salary in raw data.</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Promotion Odds Ratio</div>
+            <div class="metric-value" id="promoOrValue">—</div>
+            <div class="metric-sub">Men’s odds of ever being observed as Full Professor, conditional on tenure proxy.</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">
+            <h3>Core takeaway</h3>
+            <span class="badge">Report-aligned</span>
+          </div>
+          <div class="result-banner" id="headlineConclusion">
+            Men earn substantially more in the raw data, but much of this difference is linked to rank, experience,
+            and promotion patterns rather than a broad within-rank pay penalty at the point of hire.
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section" id="overview">
+      <div class="container">
+        <div class="section-header">
+          <div><h2>Why this study matters</h2></div>
+          <p>
+            In higher education, a raw salary gap alone does not prove discrimination. Salaries are shaped by rank, field,
+            experience, degree type, and administrative responsibilities. This website separates three mechanisms:
+            starting salaries, promotion to Full Professor, and the overall adjusted wage relationship.
+          </p>
+        </div>
+        <div class="cards-3">
+          <div class="info-card">
+            <h3>1. Starting salary</h3>
+            <p>Do men and women receive different salaries at the point of hire after accounting for field, degree type, and experience?</p>
+          </div>
+          <div class="info-card">
+            <h3>2. Promotion</h3>
+            <p>Are men more likely than women to progress from Associate Professor to Full Professor over the sample period?</p>
+          </div>
+          <div class="info-card">
+            <h3>3. Overall compensation</h3>
+            <p>After controlling for career-stage variables, does a broad gender-based salary penalty remain in the salary panel?</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="data-explorer">
+      <div class="container">
+        <div class="section-header">
+          <div><h2>Interactive data explorer</h2></div>
+          <p>
+            These visuals use the exact JSON and CSV result files generated from your dataset. No placeholder values are used.
+          </p>
+        </div>
+
+        <div class="panel">
+          <div class="filters">
+            <div class="filter-group">
+              <label for="genderFilter">Gender</label>
+              <select id="genderFilter">
+                <option value="All">All</option>
+                <option value="F">Women</option>
+                <option value="M">Men</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="rankFilter">Rank</label>
+              <select id="rankFilter">
+                <option value="All">All</option>
+                <option value="Assist">Assistant Professor</option>
+                <option value="Assoc">Associate Professor</option>
+                <option value="Full">Full Professor</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="metric-grid" style="margin-bottom: 16px;">
+            <div class="metric-card">
+              <div class="metric-label">Selected Mean Salary</div>
+              <div class="metric-value" id="selectedMeanSalary">—</div>
+              <div class="metric-sub" id="selectedMeanSub">Based on your selected filters.</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Selected Median Salary</div>
+              <div class="metric-value" id="selectedMedianSalary">—</div>
+              <div class="metric-sub">Shown only when directly available from the report outputs.</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Average Tenure</div>
+              <div class="metric-value" id="selectedTenure">—</div>
+              <div class="metric-sub">Overall gender-level summary from report outputs.</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Average Experience</div>
+              <div class="metric-value" id="selectedExperience">—</div>
+              <div class="metric-sub">Overall gender-level summary from report outputs.</div>
+            </div>
+          </div>
+
+          <div class="cards-2">
+            <div class="panel">
+              <div class="panel-title">
+                <h3>Rank composition by gender</h3>
+                <span class="badge">100% stacked share</span>
+              </div>
+              <div id="rankCompositionChart" class="plot small"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">
+                <h3>Salary by rank and gender</h3>
+                <span class="badge">Mean monthly salary</span>
+              </div>
+              <div id="salaryByRankChart" class="plot small"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="error" id="errorBox"></div>
+      </div>
+    </section>
+
+    <section class="section" id="findings">
+      <div class="container">
+        <div class="section-header">
+          <div><h2>Key findings</h2></div>
+          <p>
+            Each section below is tied directly to the verified result files generated from your report dataset.
+          </p>
+        </div>
+
+        <div class="tab-bar">
+          <button class="tab-btn active" data-tab="tab-starting">Starting salary</button>
+          <button class="tab-btn" data-tab="tab-promotion">Promotion</button>
+          <button class="tab-btn" data-tab="tab-overall">Overall wage gap</button>
+        </div>
+
+        <div id="tab-starting" class="tab-pane active">
+          <div class="cards-2">
+            <div class="panel">
+              <div class="panel-title">
+                <h3>Starting salary: raw comparison</h3>
+                <span class="badge">Hiring stage</span>
+              </div>
+              <div id="startingSalaryChart" class="plot"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">
+                <h3>Starting-salary regression summary</h3>
+                <span class="badge">Log-linear model</span>
+              </div>
+              <div id="startingCoefChart" class="plot"></div>
+            </div>
+          </div>
+          <div class="result-banner" id="startingSummary"></div>
+        </div>
+
+        <div id="tab-promotion" class="tab-pane">
+          <div class="cards-2">
+            <div class="panel">
+              <div class="panel-title">
+                <h3>Promotion rates to Full Professor</h3>
+                <span class="badge">Descriptive comparison</span>
+              </div>
+              <div id="promotionRateChart" class="plot"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">
+                <h3>Promotion model effects</h3>
+                <span class="badge">Logistic regression</span>
+              </div>
+              <div id="promotionCoefChart" class="plot"></div>
+            </div>
+          </div>
+          <div class="result-banner" id="promotionSummary"></div>
+        </div>
+
+        <div id="tab-overall" class="tab-pane">
+          <div class="cards-2">
+            <div class="panel">
+              <div class="panel-title">
+                <h3>Raw gap and within-rank comparisons</h3>
+                <span class="badge">Salary structure</span>
+              </div>
+              <div id="overallGapChart" class="plot"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">
+                <h3>Adjusted log-salary model</h3>
+                <span class="badge">Controls included</span>
+              </div>
+              <div id="overallCoefChart" class="plot"></div>
+            </div>
+          </div>
+          <div class="result-banner" id="overallSummary"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="method">
+      <div class="container">
+        <div class="section-header">
+          <div><h2>Method in plain English</h2></div>
+          <p>
+            The site summarizes the analysis choices from your report and shows the difference between a raw average difference
+            and a difference that remains after adjustment for observed characteristics.
+          </p>
+        </div>
+        <div class="cards-3">
+          <div class="info-card">
+            <h3>Longitudinal panel</h3>
+            <p>The same faculty members are observed across years, which makes it possible to study salary alongside rank progression and career stage.</p>
+          </div>
+          <div class="info-card">
+            <h3>Why log salary?</h3>
+            <p>Salary is right-skewed, so log transformation makes model interpretation more stable and the outcome more symmetric.</p>
+          </div>
+          <div class="info-card">
+            <h3>Promotion model</h3>
+            <p>A logistic regression is used for the binary event of ever being observed as a Full Professor during the sample period.</p>
+          </div>
+        </div>
+        <div class="callout-grid">
+          <div class="callout">
+            <strong>Raw difference</strong>
+            <p>A simple average difference across all salary observations, without controlling for rank, field, or experience.</p>
+          </div>
+          <div class="callout">
+            <strong>Adjusted difference</strong>
+            <p>A model-based estimate after controlling for observable factors like rank, experience, and administrative duties.</p>
+          </div>
+          <div class="callout">
+            <strong>Structural inequality</strong>
+            <p>A pattern where gender differences emerge through promotion and representation in higher-paying roles rather than only direct pay-setting.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="limitations">
+      <div class="container">
+        <div class="section-header">
+          <div><h2>Limitations and interpretation</h2></div>
+          <p>
+            This is a descriptive and regression-based analysis, not definitive causal proof.
+          </p>
+        </div>
+        <div class="cards-2">
+          <div class="info-card">
+            <h3>Main limitations</h3>
+            <ul>
+              <li>Single-university dataset, so external validity is limited.</li>
+              <li>Sample period is 1976–1995, so modern institutions may differ.</li>
+              <li>No direct productivity measures such as publications, grants, or outside offers.</li>
+              <li>Possible survivor bias because the data reflect faculty employed at the university in 1995.</li>
+            </ul>
+          </div>
+          <div class="info-card">
+            <h3>Interpretation</h3>
+            <p>
+              The strongest conclusion is not that women were necessarily paid less than comparable men at hire.
+              The stronger conclusion is that inequality in this dataset appears to operate mainly through promotion and rank attainment,
+              which then feeds into the raw salary gap.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      Built as an interactive companion website for the faculty salary inequality project.
+    </div>
+  </footer>
+
+  <script>
+    const plotTheme = {
+      paper_bgcolor: 'rgba(0,0,0,0)',
+      plot_bgcolor: 'rgba(0,0,0,0)',
+      font: { color: '#eef2ff', family: 'Inter, sans-serif' },
+      margin: { t: 32, r: 20, b: 60, l: 60 },
+      hoverlabel: {
+        bgcolor: '#0f1530',
+        bordercolor: 'rgba(255,255,255,0.12)',
+        font: { color: '#eef2ff' }
+      },
+      xaxis: {
+        gridcolor: 'rgba(255,255,255,0.08)',
+        linecolor: 'rgba(255,255,255,0.14)',
+        zerolinecolor: 'rgba(255,255,255,0.14)'
+      },
+      yaxis: {
+        gridcolor: 'rgba(255,255,255,0.08)',
+        linecolor: 'rgba(255,255,255,0.14)',
+        zerolinecolor: 'rgba(255,255,255,0.14)'
+      },
+      legend: { orientation: 'h', y: -0.22 }
+    };
+
+    const state = {
+      summary: null,
+      starting: null,
+      promotion: null,
+      overall: null,
+      rankComposition: [],
+      salaryByRankGender: []
+    };
+
+    const fmtCurrency = (v, digits = 0) => {
+      if (v === null || v === undefined || Number.isNaN(Number(v))) return '—';
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: digits,
+        minimumFractionDigits: digits
+      }).format(Number(v));
+    };
+
+    const fmtNumber = (v, digits = 0) => {
+      if (v === null || v === undefined || Number.isNaN(Number(v))) return '—';
+      return new Intl.NumberFormat('en-US', {
+        maximumFractionDigits: digits,
+        minimumFractionDigits: digits
+      }).format(Number(v));
+    };
+
+    const fmtPercent = (v, digits = 1) => {
+      if (v === null || v === undefined || Number.isNaN(Number(v))) return '—';
+      return `${Number(v).toFixed(digits)}%`;
+    };
+
+    async function loadJSON(path) {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error(`Could not load ${path}. Make sure you are running a local server.`);
+      return await res.json();
+    }
+
+    async function loadCSV(path) {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error(`Could not load ${path}. Make sure you are running a local server.`);
+      const text = await res.text();
+      const parsed = Papa.parse(text, { header: true, dynamicTyping: true, skipEmptyLines: true });
+      return parsed.data;
+    }
+
+    function showError(message) {
+      const box = document.getElementById('errorBox');
+      box.style.display = 'block';
+      box.textContent = message;
+    }
+
+    function findByRankSex(rank, sex) {
+      return state.salaryByRankGender.find(row => row.rank === rank && row.sex === sex) || null;
+    }
+
+    function getGenderObservationCounts() {
+      const counts = { F: 0, M: 0 };
+      state.rankComposition.forEach(row => {
+        counts[row.sex] = (counts[row.sex] || 0) + Number(row.count);
+      });
+      return counts;
+    }
+
+    function getOverallMeanFromCounts(summary) {
+      const counts = getGenderObservationCounts();
+      const total = counts.F + counts.M;
+      if (!total) return null;
+      return ((summary.female_mean_salary * counts.F) + (summary.male_mean_salary * counts.M)) / total;
+    }
+
+    function updateHero() {
+      document.getElementById('obsValue').textContent = fmtNumber(state.summary.n_observations);
+      document.getElementById('facultyValue').textContent = fmtNumber(state.summary.n_faculty);
+      document.getElementById('rawGapValue').textContent = fmtCurrency(state.overall.raw_salary_gap, 0);
+      document.getElementById('promoOrValue').textContent = `${fmtNumber(state.promotion.male_odds_ratio, 2)}×`;
+    }
+
+    function renderRankCompositionChart() {
+      const orderedRanks = ['Assist', 'Assoc', 'Full'];
+      const rankLabels = { Assist: 'Assistant', Assoc: 'Associate', Full: 'Full' };
+
+      const womenVals = orderedRanks.map(rank => {
+        const row = state.rankComposition.find(r => r.sex === 'F' && r.rank === rank);
+        return row ? Number(row.prop) * 100 : 0;
+      });
+
+      const menVals = orderedRanks.map(rank => {
+        const row = state.rankComposition.find(r => r.sex === 'M' && r.rank === rank);
+        return row ? Number(row.prop) * 100 : 0;
+      });
+
+      Plotly.newPlot(
+        'rankCompositionChart',
+        [
+          {
+            x: ['Women', 'Men'],
+            y: [womenVals[0], menVals[0]],
+            name: 'Assistant',
+            type: 'bar'
+          },
+          {
+            x: ['Women', 'Men'],
+            y: [womenVals[1], menVals[1]],
+            name: 'Associate',
+            type: 'bar'
+          },
+          {
+            x: ['Women', 'Men'],
+            y: [womenVals[2], menVals[2]],
+            name: 'Full',
+            type: 'bar'
+          }
+        ],
+        {
+          ...plotTheme,
+          barmode: 'stack',
+          yaxis: {
+            ...plotTheme.yaxis,
+            title: 'Percent of observations',
+            range: [0, 100]
+          },
+          xaxis: {
+            ...plotTheme.xaxis,
+            title: 'Gender'
+          }
+        },
+        { responsive: true, displayModeBar: false }
+      );
+    }
+
+    function renderSalaryByRankChart() {
+      const orderedRanks = ['Assist', 'Assoc', 'Full'];
+      const rankLabels = { Assist: 'Assistant', Assoc: 'Associate', Full: 'Full' };
+
+      const femaleVals = orderedRanks.map(rank => Number(findByRankSex(rank, 'F')?.mean_salary ?? 0));
+      const maleVals = orderedRanks.map(rank => Number(findByRankSex(rank, 'M')?.mean_salary ?? 0));
+
+      Plotly.newPlot(
+        'salaryByRankChart',
+        [
+          {
+            x: orderedRanks.map(r => rankLabels[r]),
+            y: femaleVals,
+            name: 'Women',
+            type: 'bar',
+            marker: { color: '#79a6ff' }
+          },
+          {
+            x: orderedRanks.map(r => rankLabels[r]),
+            y: maleVals,
+            name: 'Men',
+            type: 'bar',
+            marker: { color: '#6ee7d8' }
+          }
+        ],
+        {
+          ...plotTheme,
+          barmode: 'group',
+          yaxis: { ...plotTheme.yaxis, title: 'Mean monthly salary ($)' },
+          xaxis: { ...plotTheme.xaxis, title: 'Rank' }
+        },
+        { responsive: true, displayModeBar: false }
+      );
+    }
+
+    function updateExplorerCards() {
+      const gender = document.getElementById('genderFilter').value;
+      const rank = document.getElementById('rankFilter').value;
+
+      let meanSalary = null;
+      let medianSalary = null;
+      let tenure = null;
+      let experience = null;
+      let subtitle = 'Based on your selected filters.';
+
+      if (gender !== 'All' && rank !== 'All') {
+        const row = findByRankSex(rank, gender);
+        meanSalary = row ? Number(row.mean_salary) : null;
+        subtitle = `Mean salary for ${gender === 'F' ? 'women' : 'men'} at the ${rank === 'Assist' ? 'Assistant' : rank === 'Assoc' ? 'Associate' : 'Full'} Professor rank.`;
+      } else if (gender !== 'All' && rank === 'All') {
+        if (gender === 'F') {
+          meanSalary = state.summary.female_mean_salary;
+          medianSalary = state.summary.female_median_salary;
+          tenure = state.summary.female_mean_tenure;
+          experience = state.summary.female_mean_experience;
+          subtitle = 'Overall summary for women.';
+        } else {
+          meanSalary = state.summary.male_mean_salary;
+          medianSalary = state.summary.male_median_salary;
+          tenure = state.summary.male_mean_tenure;
+          experience = state.summary.male_mean_experience;
+          subtitle = 'Overall summary for men.';
+        }
+      } else if (gender === 'All' && rank !== 'All') {
+        const womenRow = findByRankSex(rank, 'F');
+        const menRow = findByRankSex(rank, 'M');
+
+        const rankCountWomen = state.rankComposition.find(r => r.sex === 'F' && r.rank === rank)?.count ?? 0;
+        const rankCountMen = state.rankComposition.find(r => r.sex === 'M' && r.rank === rank)?.count ?? 0;
+        const total = Number(rankCountWomen) + Number(rankCountMen);
+
+        if (womenRow && menRow && total > 0) {
+          meanSalary =
+            ((Number(womenRow.mean_salary) * Number(rankCountWomen)) +
+            (Number(menRow.mean_salary) * Number(rankCountMen))) / total;
+        }
+
+        subtitle = `Weighted mean salary across men and women within the ${rank === 'Assist' ? 'Assistant' : rank === 'Assoc' ? 'Associate' : 'Full'} Professor rank.`;
+      } else {
+        meanSalary = getOverallMeanFromCounts(state.summary);
+        tenure = state.summary.mean_tenure;
+        experience = state.summary.mean_experience;
+        subtitle = 'Overall summary using weighted observation counts from the verified report files.';
+      }
+
+      document.getElementById('selectedMeanSalary').textContent = fmtCurrency(meanSalary, 2);
+      document.getElementById('selectedMedianSalary').textContent = fmtCurrency(medianSalary, 2);
+      document.getElementById('selectedTenure').textContent = tenure === null ? '—' : `${fmtNumber(tenure, 2)} yrs`;
+      document.getElementById('selectedExperience').textContent = experience === null ? '—' : `${fmtNumber(experience, 2)} yrs`;
+      document.getElementById('selectedMeanSub').textContent = subtitle;
+    }
+
+    function renderStartingTab() {
+      Plotly.newPlot(
+        'startingSalaryChart',
+        [
+          {
+            x: ['Women', 'Men'],
+            y: [state.starting.female_mean_starting_salary, state.starting.male_mean_starting_salary],
+            type: 'bar',
+            marker: { color: ['#79a6ff', '#6ee7d8'] },
+            text: [
+              fmtCurrency(state.starting.female_mean_starting_salary, 0),
+              fmtCurrency(state.starting.male_mean_starting_salary, 0)
+            ],
+            textposition: 'auto',
+            hovertemplate: '%{x}: %{y:$,.2f}<extra></extra>'
+          }
+        ],
+        {
+          ...plotTheme,
+          yaxis: { ...plotTheme.yaxis, title: 'Mean starting monthly salary ($)' },
+          xaxis: { ...plotTheme.xaxis, title: 'Gender' }
+        },
+        { responsive: true, displayModeBar: false }
+      );
+
+      Plotly.newPlot(
+        'startingCoefChart',
+        [
+          {
+            x: [
+              state.starting.male_coefficient,
+              state.starting.experience_coefficient,
+              state.starting.field_other_coefficient,
+              state.starting.field_prof_coefficient,
+              state.starting.deg_phd_coefficient,
+              state.starting.deg_prof_coefficient
+            ],
+            y: [
+              'Male',
+              'Experience',
+              'Field: Other',
+              'Field: Prof',
+              'Degree: PhD',
+              'Degree: Prof'
+            ],
+            type: 'bar',
+            orientation: 'h',
+            marker: {
+              color: ['#79a6ff', '#6ee7d8', '#c29bff', '#ffd48f', '#ff9ec2', '#b8ff8c']
+            },
+            hovertemplate: '%{y}: %{x:.4f}<extra></extra>'
+          }
+        ],
+        {
+          ...plotTheme,
+          xaxis: { ...plotTheme.xaxis, title: 'Estimated coefficient' },
+          yaxis: { ...plotTheme.yaxis, automargin: true },
+          shapes: [{
+            type: 'line',
+            x0: 0, x1: 0, y0: -0.5, y1: 5.5,
+            line: { color: 'rgba(255,255,255,0.18)', dash: 'dot' }
+          }]
+        },
+        { responsive: true, displayModeBar: false }
+      );
+
+      document.getElementById('startingSummary').innerHTML = `
+        The raw starting salary gap is <strong>${fmtCurrency(state.starting.raw_starting_salary_gap, 2)}</strong> in favor of men.
+        After controlling for field, degree type, and experience, the coefficient on <strong>male</strong> is
+        <strong>${fmtNumber(state.starting.male_coefficient, 4)}</strong> with
+        <strong>p = ${fmtNumber(state.starting.male_p_value, 4)}</strong>.
+        This matches the report’s conclusion that there is little evidence of systematic adjusted starting-salary discrimination.
+      `;
+    }
+
+    function renderPromotionTab() {
+      Plotly.newPlot(
+        'promotionRateChart',
+        [
+          {
+            x: ['Women', 'Men'],
+            y: [state.promotion.female_promotion_rate, state.promotion.male_promotion_rate],
+            type: 'bar',
+            marker: { color: ['#79a6ff', '#6ee7d8'] },
+            text: [
+              fmtPercent(state.promotion.female_promotion_rate, 1),
+              fmtPercent(state.promotion.male_promotion_rate, 1)
+            ],
+            textposition: 'auto',
+            hovertemplate: '%{x}: %{y:.1f}%<extra></extra>'
+          }
+        ],
+        {
+          ...plotTheme,
+          yaxis: { ...plotTheme.yaxis, title: 'Promotion rate (%)' },
+          xaxis: { ...plotTheme.xaxis, title: 'Gender' }
+        },
+        { responsive: true, displayModeBar: false }
+      );
+
+      Plotly.newPlot(
+        'promotionCoefChart',
+        [
+          {
+            x: [state.promotion.male_coefficient, state.promotion.max_tenure_coefficient],
+            y: ['Male', 'Maximum tenure'],
+            type: 'bar',
+            orientation: 'h',
+            marker: { color: ['#79a6ff', '#ffd48f'] },
+            hovertemplate: '%{y}: %{x:.4f}<extra></extra>'
+          }
+        ],
+        {
+          ...plotTheme,
+          xaxis: { ...plotTheme.xaxis, title: 'Log-odds coefficient' },
+          yaxis: { ...plotTheme.yaxis, automargin: true },
+          shapes: [{
+            type: 'line',
+            x0: 0, x1: 0, y0: -0.5, y1: 1.5,
+            line: { color: 'rgba(255,255,255,0.18)', dash: 'dot' }
+          }]
+        },
+        { responsive: true, displayModeBar: false }
+      );
+
+      document.getElementById('promotionSummary').innerHTML = `
+        Women in the promotion sample reached Full Professor at roughly <strong>${fmtPercent(state.promotion.female_promotion_rate, 1)}</strong>,
+        compared with <strong>${fmtPercent(state.promotion.male_promotion_rate, 1)}</strong> for men.
+        In the logistic regression, the coefficient on <strong>male</strong> is
+        <strong>${fmtNumber(state.promotion.male_coefficient, 4)}</strong> with an odds ratio of
+        <strong>${fmtNumber(state.promotion.male_odds_ratio, 2)}</strong>.
+        This is the strongest evidence in the project that inequality is operating through career progression.
+      `;
+    }
+
+    function renderOverallTab() {
+      const assistantWomen = Number(findByRankSex('Assist', 'F')?.mean_salary ?? 0);
+      const assistantMen = Number(findByRankSex('Assist', 'M')?.mean_salary ?? 0);
+      const associateWomen = Number(findByRankSex('Assoc', 'F')?.mean_salary ?? 0);
+      const associateMen = Number(findByRankSex('Assoc', 'M')?.mean_salary ?? 0);
+      const fullWomen = Number(findByRankSex('Full', 'F')?.mean_salary ?? 0);
+      const fullMen = Number(findByRankSex('Full', 'M')?.mean_salary ?? 0);
+
+      Plotly.newPlot(
+        'overallGapChart',
+        [
+          {
+            x: ['Women overall', 'Men overall', 'Assist F', 'Assist M', 'Assoc F', 'Assoc M', 'Full F', 'Full M'],
+            y: [
+              state.overall.female_mean_salary,
+              state.overall.male_mean_salary,
+              assistantWomen,
+              assistantMen,
+              associateWomen,
+              associateMen,
+              fullWomen,
+              fullMen
+            ],
+            type: 'bar',
+            marker: {
+              color: ['#79a6ff', '#6ee7d8', '#4b78d6', '#44cdbb', '#4b78d6', '#44cdbb', '#4b78d6', '#44cdbb']
+            },
+            hovertemplate: '%{x}: %{y:$,.2f}<extra></extra>'
+          }
+        ],
+        {
+          ...plotTheme,
+          yaxis: { ...plotTheme.yaxis, title: 'Mean monthly salary ($)' },
+          xaxis: { ...plotTheme.xaxis, tickangle: -20 }
+        },
+        { responsive: true, displayModeBar: false }
+      );
+
+      Plotly.newPlot(
+        'overallCoefChart',
+        [
+          {
+            x: [
+              state.overall.male_coefficient,
+              state.overall.experience_coefficient,
+              state.overall.assoc_rank_coefficient,
+              state.overall.full_rank_coefficient,
+              state.overall.admin_coefficient
+            ],
+            y: ['Male', 'Experience', 'Associate rank', 'Full rank', 'Admin duty'],
+            type: 'bar',
+            orientation: 'h',
+            marker: { color: ['#79a6ff', '#6ee7d8', '#ffd48f', '#ff9ec2', '#c29bff'] },
+            hovertemplate: '%{y}: %{x:.4f}<extra></extra>'
+          }
+        ],
+        {
+          ...plotTheme,
+          xaxis: { ...plotTheme.xaxis, title: 'Estimated log-salary coefficient' },
+          yaxis: { ...plotTheme.yaxis, automargin: true },
+          shapes: [{
+            type: 'line',
+            x0: 0, x1: 0, y0: -0.5, y1: 4.5,
+            line: { color: 'rgba(255,255,255,0.18)', dash: 'dot' }
+          }]
+        },
+        { responsive: true, displayModeBar: false }
+      );
+
+      document.getElementById('overallSummary').innerHTML = `
+        The raw mean monthly salary gap is <strong>${fmtCurrency(state.overall.raw_salary_gap, 2)}</strong> in favor of men,
+        with a 95% confidence interval of <strong>${fmtCurrency(state.overall.salary_gap_ci_lower, 2)}</strong> to
+        <strong>${fmtCurrency(state.overall.salary_gap_ci_upper, 2)}</strong>.
+        In the adjusted log-salary regression, the coefficient on <strong>male</strong> is
+        <strong>${fmtNumber(state.overall.male_coefficient, 4)}</strong> with
+        <strong>p = ${state.overall.male_p_value < 0.001 ? '&lt; 0.001' : fmtNumber(state.overall.male_p_value, 4)}</strong>.
+        This supports the report’s conclusion that the raw gap is explained more by rank attainment, experience,
+        and administrative roles than by a broad direct pay penalty at comparable career stages.
+      `;
+    }
+
+    function setupTabs() {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById(btn.dataset.tab).classList.add('active');
+          window.dispatchEvent(new Event('resize'));
+        });
+      });
+    }
+
+    function attachExplorerEvents() {
+      document.getElementById('genderFilter').addEventListener('change', updateExplorerCards);
+      document.getElementById('rankFilter').addEventListener('change', updateExplorerCards);
+      updateExplorerCards();
+    }
+
+    async function init() {
+      try {
+        const [summary, starting, promotion, overall, rankComposition, salaryByRankGender] = await Promise.all([
+          loadJSON('./summary_stats.json'),
+          loadJSON('./starting_salary_results.json'),
+          loadJSON('./promotion_results.json'),
+          loadJSON('./overall_salary_results.json'),
+          loadCSV('./rank_composition.csv'),
+          loadCSV('./salary_by_rank_gender.csv')
+        ]);
+
+        state.summary = summary;
+        state.starting = starting;
+        state.promotion = promotion;
+        state.overall = overall;
+        state.rankComposition = rankComposition;
+        state.salaryByRankGender = salaryByRankGender;
+
+        updateHero();
+        renderRankCompositionChart();
+        renderSalaryByRankChart();
+        renderStartingTab();
+        renderPromotionTab();
+        renderOverallTab();
+        setupTabs();
+        attachExplorerEvents();
+      } catch (err) {
+        console.error(err);
+        showError(`${err.message} Open this folder in a local server, not directly with file://. In VS Code, use Live Server or run: python -m http.server 8000`);
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      [
+        'rankCompositionChart',
+        'salaryByRankChart',
+        'startingSalaryChart',
+        'startingCoefChart',
+        'promotionRateChart',
+        'promotionCoefChart',
+        'overallGapChart',
+        'overallCoefChart'
+      ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) Plotly.Plots.resize(el);
+      });
+    });
+
+    init();
+  </script>
+</body>
+</html>
